@@ -1,0 +1,22 @@
+本文分析amd64处理器相关的clone实现。
+runtime包clone函数的原型为int32 clone(int32 flags, void *stk, M *mp, G *gp, void (*fn)(void))，该函数在newosproc中被调用。调用参数为clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart))),新创建的线程从fn开始执行。stk为线程栈，flag为clone系统调用的flag参数。clone的函数实现在sys_linux_amd64.s文件中：
+首先是传递参数，amd64系统调用的传参方式为rdi，rsi，rdx，r10，r8
+	MOVL	flags+0(FP), DI//falg参数传入rdi
+	MOVQ	stk+8(FP), SI//线程栈参数传入rsi
+//rdx和r10都是0
+	MOVQ	$0, DX
+	MOVQ	$0, R10
+//这里r8存的是M类型的地址，但是在clone系统调用中，r8参数存放的是线程本地存储TLS，所以创建新的线程时，m其实存放在新线程的本地存储中。(+8)
+	SYSCALL//系统调用clone
+
+	// Set FS to point at m->tls.
+	LEAQ	m_tls(R8), DI
+	CALL	runtime·settls(SB)
+r8存放M的地址(M*),这里把tls的地址放到rdi，调用settls。在settls中：
+ADDQ	$8, DI//这里让rdi加上8的原因是linux amd64线程模型下取TLS使用的是fs+offset,offset从-8开始，这样加8之后第一个线程本地存储变量就从m的tls变量地址处开始存放。
+在settls中使用arch_prctl系统调用将基址设置到fs寄存器。
+
+get_tls(CX)
+	MOVQ	R8, g_m(R9)
+	MOVQ	R9, g(CX)
+这里cx寄存器指向当前线程的TLS，即fs:-4,r8存放m，r9存放g，将当前的g存放到cx，即TLS。这样func getg() *g函数编译成的FS:0xfffffff8指令即可获取当前的g。
