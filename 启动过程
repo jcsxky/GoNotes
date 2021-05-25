@@ -1,0 +1,7 @@
+1.启动过程：	
+	runtime·rt0_go:
+	225行CALL	runtime·mstart(SB)调用mstart->mstart1，在mstart1中调用schedule切换g，新的g从g的启动函数runtime.main开始执行
+	在runtime.main中调用newm->newm1->newosproc->clone启动sysmon线程。
+2.函数传参分析
+	函数参数从右向左压栈，返回值相同，string等类型会压入地址和长度。
+3.调度：
