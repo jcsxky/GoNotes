@@ -4,4 +4,35 @@
 	在runtime.main中调用newm->newm1->newosproc->clone启动sysmon线程。
 2.函数传参分析
 	函数参数从右向左压栈，返回值相同，string等类型会压入地址和长度，slice会压入地址、长度和容量。
+3.struct内存布局：
+	type A struct {
+		X1 uint8
+		X2 string
+		X3 []uint64
+		X4 int32
+		X5 map[uint16]bool
+		X6 bool
+		X7 uint32
+	}
+	x:=&A{
+		X1: 0x12,
+		X2: "qwer",
+		X3: []uint64{},
+		X4: 0x3456,
+		X5: map[uint16]bool{},
+		X6: true,
+		X7: 0x7899,
+	}
+A的内存布局为：
+0:0x12，8字节
+1:字符串地址，8字节
+2：字符串长度，8字节
+3：slice地址，8字节
+4：slice长度，8字节
+5：slice容量，8字节
+6:0x456，8字节，偏移量0x30
+7:map地址，8字节
+8：true,4字节，偏移量0x40
+9：0x7899，4字节，偏移量0x44
+
 3.调度：
