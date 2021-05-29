@@ -1,0 +1,14 @@
+1.空interface实现：
+type eface struct {
+	_type *_type
+	data  unsafe.Pointer
+}
+data存放对应的赋值，_type存实际类型
+2.非空interface：
+type iface struct {
+	tab  *itab
+	data unsafe.Pointer
+}
+itab存放接口定义的函数名及函数地址
+3.类型转化：
+类型转化通过iface相关的assert实现
