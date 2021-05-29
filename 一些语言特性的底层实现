@@ -9,6 +9,13 @@ type iface struct {
 	tab  *itab
 	data unsafe.Pointer
 }
-itab存放接口定义的函数名及函数地址
+type itab struct {
+	inter *interfacetype
+	_type *_type
+	hash  uint32 // copy of _type.hash. Used for type switches.
+	_     [4]byte
+	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
+}
+itab的fun字段存放接口定义的函数的起始地址,如果有多个函数则按地址顺序依次排列,因为fun字段是可变长度的(variable sized).
 3.类型转换：
 如果是eface则直接赋值，不需要类型转换，如果是iface则通过iface相关的assert实现。
